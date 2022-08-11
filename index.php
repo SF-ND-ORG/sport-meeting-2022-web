@@ -49,8 +49,7 @@
 		const classID=<?php echo $_SERVER['PHP_AUTH_USER'];?>;
 		const apiURL="https://sfnd-sports.azurewebsites.net";
 		var projectList=null;
-		var DOMFormattedList="";
-		function getProjects(){
+		function Initialize(){
 			$.get(apiURL+"/get_projects",function(data,status){
 				if(status=="success"){
 					projectList=JSON.parse(data);
@@ -60,12 +59,7 @@
 					}
 					else{
 						projectList=projectList.projects;
-						let s="";
-						let len=projectList.length;
-						for(let i=0;i<len;i++){
-							s=s+'<option value="'+projectList[i].id+'">'+projectList[i].name+'</option>';
-						}
-						DOMFormattedList=s;
+						getTable();
 					}
 				}
 				else{
@@ -74,19 +68,35 @@
 				}
 			});
 		}
-		function addItem(id="",name="",project=projectList[0].id){
-			let tableLine='<tr><td><div class="input-group"><input type="number" step="1" class="form-control id" placeholder="学号" value="'+id+'"></div></td><td><div class="input-group"><input type="text" class="form-control name" placeholder="姓名" value="'+name+'"></div></td><td><select class="form-select project">'+DOMFormattedList+'</select></td><td><button type="button" class="btn btn-danger" onclick="$(this).parent().parent().remove()">删除</button></td></tr>';
+		function addItem(id="",name="",project){
+			let tableLine='<tr><td><div class="input-group"><input type="number" step="1" class="form-control id" placeholder="学号" value="'+id+'"></div></td><td><div class="input-group"><input type="text" class="form-control name" placeholder="姓名" value="'+name+'"></div></td><td><span class="project" data-project="'+project.id+'">'+project.name+'</span></td></tr>';
 			$("#table").append(tableLine);
 			$("#table").children("tr:last").find("select").val(project);
 		}
 		function getTable(){
+			let records=[];
 			$.get(apiURL+"/get_class_record",{class:classID},function(data,status){
 				data=JSON.parse(data);
 				if(status=="success"&&data.status=="success"){
 					data=data.class_record;
-					let len=data.length;
-					for(let i=0;i<len;i++){
-						addItem(data[i].school_id,data[i].name,data[i].project);
+					let len=projectList.length;
+					let i=0;
+					for(;i<len;i++){
+						records.push({id:"",name:"",project:projectList[i]});
+					}
+					let plen=len;
+					len=data.length;
+					for(i=0;i<len;i++){
+						for(let n=0;n<plen;n++){
+							if(records[n].project.id==data[i].project){
+								records[n].id=data[i].school_id;
+								records[n].name=data[i].name;
+								break;
+							}
+						}
+					}
+					for(i=0;i<plen;i++){
+						addItem(records[i].id,records[i].name,records[i].project);
 					}
 				}
 				else{
@@ -99,7 +109,7 @@
 			$("#table>tr").each(function(){
 				let id=$(this).find(".id").val();
 				let name=$(this).find(".name").val();
-				let project=$(this).find(".project").val();
+				let project=$(this).find(".project").attr("data-project");
 				records.push({school_id:id,name:name,project:project});
 			});
 			$.ajax({
@@ -114,8 +124,7 @@
 			});
 		}
 		window.onload=function(){
-			getProjects();
-			getTable();
+			Initialize();
 		}
 	</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
@@ -130,9 +139,6 @@
                     <th>学号</th>
                     <th>姓名</th>
                     <th>项目</th>
-					<th>
-						<button type="button" class="btn btn-info" onclick="addItem()">添加</button>
-					</th>
                 </tr>
             </thead>
 			<tbody id="table">
