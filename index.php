@@ -124,13 +124,13 @@
 		function upload(){
 			let records=[];
 			let flag=true;
-			let re=/^\s*$/;
+			let spacePattern=/^\s*$/;
+			let XSSPattern=/[<>'"();]/;
 			$("#table>tr").each(function(){
 				let id=$(this).find(".id").val();
 				let name=$(this).find(".name").val();
 				let project=$(this).find(".project").attr("data-project");
-				records.push({school_id:id,name:name,project:project});
-				if(!re.test(id)&&(id.length<classID.length||id.substring(0,classID.length)!=classID||id.length!=classID.length+2)){
+				if(!spacePattern.test(id)&&(id.length<classID.length||id.substring(0,classID.length)!=classID||id.length!=classID.length+2)){
 					let len=projectList.length;
 					let p=undefined;
 					for(let i=0;i<len;i++){
@@ -143,7 +143,7 @@
 					flag=false;
 					return false;
 				}
-				if(!re.test(id)&&re.test(name)){
+				if(!spacePattern.test(id)&&spacePattern.test(name)){
 					let len=projectList.length;
 					let p=undefined;
 					for(let i=0;i<len;i++){
@@ -156,6 +156,21 @@
 					flag=false;
 					return false;
 				}
+				if(XSSPattern.test(id)||XSSPattern.test(name)){
+					let len=projectList.length;
+					let p=undefined;
+					for(let i=0;i<len;i++){
+						if(projectList[i].id==project){
+							p=projectList[i].name;
+							break;
+						}
+					}
+					alert(p+"项目存在非法输入");
+					flag=false;
+					return false;
+				}
+				name=/^[^\s]*$/.exec(name)[0];
+				records.push({school_id:id,name:name,project:project});
 			});
 			if(!flag){
 				return false;
@@ -163,7 +178,7 @@
 			$.ajax({
 				type:"post",
 				url:apiURL+"?request=updateRecord&class="+classID+"&token="+token,
-				data:{athletes:records},
+				data:{athletes:JSON.stringify(records)},
 				success:function(data){
 					data=JSON.parse(data);
 					token=data.token;
@@ -173,6 +188,9 @@
 					else{
 						alert("提交失败");
 					}
+				},
+				error:function(){
+					alert("提交失败")
 				}
 			});
 		}
@@ -180,7 +198,7 @@
 			Initialize();
 			let d=new Date();
 			if(d.getDay()==4){
-				console.warn("KFC crazy Thursday need ￥50");
+				console.error("KFC crazy Thursday needs ￥50");
 			}
 		}
 	</script>

@@ -54,6 +54,15 @@
     {
         if(validateToken($class,$token))
         {
+            $record=json_decode($record);
+            foreach($record as $r)
+            {
+                if(preg_match("/[<>'\"();]/",$r->name))
+                {
+                    http_response_code(403);
+                    die();
+                }
+            }
             $record=json_encode(["class"=>$class,"athletes"=>$record]);
             $curl=curl_init();
             curl_setopt($curl,CURLOPT_URL,backend."/update_athletes");
